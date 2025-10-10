@@ -1,3 +1,67 @@
+// Nos aseguramos de que el DOM esté completamente cargado antes de ejecutar el script
+document.addEventListener('DOMContentLoaded', () => {
+  // Llama a las funciones para poblar el carrusel y las tarjetas de juego
+  CarrouselJuegos();
+  buscarYMostrarJuegos();
+});
+
+async function CarrouselJuegos() {
+  // Esta es la KEY de la API y la URL de búsqueda
+  const apiKey = "058117af7bb1482cb1f272040b80a596";
+  const carouselIndicators = document.getElementById('carousel-indicators');
+  const carouselInner = document.getElementById('carousel-inner');
+
+  // Limpiamos el contenido previo
+  carouselIndicators.innerHTML = '';
+  carouselInner.innerHTML = '';
+
+  try {
+    const today = new Date();
+    const lastYear = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+    const dates = `${lastYear.toISOString().slice(0, 10)},${today.toISOString().slice(0, 10)}`;
+
+    const url = `https://api.rawg.io/api/games?key=${apiKey}&dates=${dates}&ordering=-rating&page_size=3`;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Error en la API: ${response.statusText}`);
+    
+    const data = await response.json();
+    const games = data.results;
+
+    if (games && games.length > 0) {
+      games.forEach((game, index) => {
+        const isActive = index === 0;
+
+        // Crear indicador
+        const indicator = document.createElement('button');
+        indicator.type = 'button';
+        indicator.dataset.bsTarget = '#carouselExampleCaptions';
+        indicator.dataset.bsSlideTo = index;
+        indicator.ariaLabel = `Slide ${index + 1}`;
+        if (isActive) {
+          indicator.className = 'active';
+          indicator.ariaCurrent = 'true';
+        }
+        carouselIndicators.appendChild(indicator);
+
+        // Crear item del carrusel
+        const carouselItem = document.createElement('div');
+        carouselItem.className = `carousel-item ${isActive ? 'active' : ''}`;
+        carouselItem.innerHTML = `
+          <img src="${game.background_image}" class="d-block w-100" alt="${game.name}" style="object-fit: cover; height: 500px;">
+          <div class="carousel-caption d-none d-md-block">
+            <h5>${game.name}</h5>
+            <p>Valoración: ${game.rating} / 5</p>
+          </div>`;
+        carouselInner.appendChild(carouselItem);
+      });
+    }
+  } catch (error) {
+    console.error('Error al cargar los juegos para el carrusel:', error);
+    carouselInner.innerHTML = '<div class="carousel-item active"><p class="text-white bg-danger p-3">Error al cargar imágenes.</p></div>';
+  }
+}
+
 // funcion que usaremos para recortar el texto a una longitud maxima
 function cortarTexto(texto, maxLongitud) {
   // Si no tenemos texto devolvemos un mensaje por defecto
@@ -114,6 +178,3 @@ async function buscarYMostrarJuegos() {
     container.innerHTML = "<h1>Error al cargar los juegos</h1><p>Peldon peldon peldon.</p>";
   }
 }
-
-// Ejecutamos la función asíncrona
-buscarYMostrarJuegos();

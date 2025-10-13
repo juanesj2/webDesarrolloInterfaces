@@ -146,6 +146,13 @@ async function buscarYMostrarJuegos() {
       flipCardInner.className = 'flip-card-inner';
       const flipCardFront = document.createElement('div');
       flipCardFront.className = 'flip-card-front';
+
+      // Creamos la imagen para la parte frontal de la tarjeta
+      const gameImage = document.createElement('img');
+      gameImage.id = 'game-image';
+      gameImage.src = game.background_image;
+      gameImage.alt = `Imagen de ${game.name}`;
+
       const flipCardTitle = document.createElement('p');
       flipCardTitle.className = 'title';
       flipCardTitle.textContent = game.name;
@@ -153,6 +160,7 @@ async function buscarYMostrarJuegos() {
     //**********************  Fin contenedor flip card  ***************************************/
 
       // Añadimos la informacion a la flip card
+      flipCardFront.appendChild(gameImage);
       flipCardFront.appendChild(flipCardTitle);
       const rating = document.createElement('p');
       rating.textContent = `Valoración: ${game.rating} / 5`;

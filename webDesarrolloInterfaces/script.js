@@ -75,11 +75,12 @@ function cortarTexto(texto, maxLongitud) {
 // Con la funcion async hacemos que el codigo dentro de la funcion se ejecute de forma asincrona
 // Es decir, que no bloquea la ejecucion del resto del codigo
 // Esto es util cuando hacemos llamadas a APIs o tareas que pueden tardar en completarse
-async function buscarYMostrarJuegos() {
+async function buscarYMostrarJuegos(page = 1) {
 
   // Referencias a los elementos del DOM
   const container = document.getElementById("juegos-container");
   container.innerHTML = '<h1>Cargando juegos...</h1>'; // Mensaje de carga inicial
+  const pageSize = 6;
 
   // usamos una excepcion para manejar errores
   try {
@@ -99,7 +100,7 @@ async function buscarYMostrarJuegos() {
     // split('T')[0] nos quedamos con la parte de la fecha (antes de la T) porque no quereos la hora
 
     // En la parte page_size=1 indicamos el numero de resultados a mostrar
-    const searchUrl = `https://api.rawg.io/api/games?key=${apiKey}&dates=${lastYear.toISOString().split('T')[0]},${today.toISOString().split('T')[0]}&ordering=-rating&page_size=6`;
+    const searchUrl = `https://api.rawg.io/api/games?key=${apiKey}&dates=${lastYear.toISOString().split('T')[0]},${today.toISOString().split('T')[0]}&ordering=-rating&page_size=${pageSize}&page=${page}`;
 
     // Buscamos los juegos
     // fetch es una funcion nativa de JS que permite hacer peticiones HTTP
@@ -113,6 +114,11 @@ async function buscarYMostrarJuegos() {
       container.innerHTML = "<h1>No se encontraron juegos</h1>";
       return;
     }
+
+    // Calculamos el total de páginas y renderizamos la paginación
+    const totalGames = searchData.count;
+    const totalPages = Math.ceil(totalGames / pageSize);
+    renderizarPaginacion(page, totalPages);
 
     // Limpiamos el contenedor antes de añadir los nuevos juegos
     container.innerHTML = '';
@@ -163,13 +169,13 @@ async function buscarYMostrarJuegos() {
       flipCardFront.appendChild(gameImage);
       flipCardFront.appendChild(flipCardTitle);
       const rating = document.createElement('p');
-      rating.textContent = `Valoración: ${game.rating} / 5`;
+      rating.textContent = `Rating: ${game.rating} / 5`;
       flipCardFront.appendChild(rating);
       const flipCardBack = document.createElement('div');
       flipCardBack.className = 'flip-card-back';
       const backTitle = document.createElement('p');
       backTitle.className = 'title';
-      backTitle.textContent = 'Descripción';
+      backTitle.textContent = 'Description';
       const backDescription = document.createElement('p');
       backDescription.textContent =cortarTexto(gameDetails.description_raw, 100)|| 'Sin descripción disponible.';
       flipCardBack.appendChild(backTitle);
@@ -186,3 +192,90 @@ async function buscarYMostrarJuegos() {
     container.innerHTML = "<h1>Error al cargar los juegos</h1><p>Peldon peldon peldon.</p>";
   }
 }
+
+/*********************************** PAGINACION *********************************************/
+
+function renderizarPaginacion(currentPage, totalPages) {
+  // Cogemos el contenedor de la paginacion
+  const paginationContainer = document.getElementById('pagination-container');
+  paginationContainer.innerHTML = ''; // Limpiamos la paginación anterior
+
+  /*********** Boton primera pagina ****************/ 
+
+  const firstItem = document.createElement('li');
+  firstItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+  const firstLink = document.createElement('a');
+  firstLink.className = 'page-link';
+  firstLink.href = '#';
+  firstLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-backward-fast"></i></span>'; // Doble flecha para indicar "primera"
+  firstLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage > 1) {
+      buscarYMostrarJuegos(1); // Ir a la página 1
+    }
+  };
+  firstItem.appendChild(firstLink);
+  paginationContainer.appendChild(firstItem);
+
+  /******** FIN Boton primera pagina ****************/ 
+
+
+  /*********** Boton anterior pagina ****************/ 
+
+  const prevItem = document.createElement('li');
+  prevItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+  const prevLink = document.createElement('a');
+  prevLink.className = 'page-link';
+  prevLink.href = '#';
+  prevLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-backward-step"></i></span>';
+  prevLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage > 1) {
+      buscarYMostrarJuegos(currentPage - 1);
+    }
+  };
+  prevItem.appendChild(prevLink);
+  paginationContainer.appendChild(prevItem);
+
+  /******** FIN Boton anterior pagina ****************/ 
+
+  /******************* Botones de número de página **************************/
+  let startPage = Math.max(1, currentPage - 1);
+  let endPage = Math.min(totalPages, currentPage + 1);
+
+  for (let i = startPage; i <= endPage; i++) {
+    const pageItem = document.createElement('li');
+    pageItem.className = `page-item ${i === currentPage ? 'active' : ''}`;
+    const pageLink = document.createElement('a');
+    pageLink.className = 'page-link';
+    pageLink.href = '#';
+    pageLink.textContent = i;
+    pageLink.onclick = (e) => {
+      e.preventDefault();
+      buscarYMostrarJuegos(i);
+    };
+    pageItem.appendChild(pageLink);
+    paginationContainer.appendChild(pageItem);
+  }
+  /**************** FIN Botones de número de página **************************/
+
+  /******************* Botones siguiente página **************************/
+  const nextItem = document.createElement('li');
+  nextItem.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+  const nextLink = document.createElement('a');
+  nextLink.className = 'page-link';
+  nextLink.href = '#';
+  nextLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-forward-step"></i></span>';
+  nextLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage < totalPages) {
+      buscarYMostrarJuegos(currentPage + 1);
+    }
+  };
+  nextItem.appendChild(nextLink);
+  paginationContainer.appendChild(nextItem);
+}
+/**************** FIN Botones siguiente página **************************/
+
+
+/******************************** FIN PAGINACION *********************************************/

@@ -42,7 +42,7 @@ body {
   width: 50%;
   height: 50px;
   padding: 0.5rem;
-  background-color: #fff;
+  background-color: #3b3b3b;
   position: relative;
   display: flex;
   justify-content: center;
@@ -76,7 +76,7 @@ body {
     transform: translateX(100%);
     transition: transform 0.3s ease-in;
     transform-origin: center right;
-    background-color: #eee;
+    background-color: #5e5d5d;
   }
 
   &:hover,
@@ -104,6 +104,10 @@ body {
     height: 20px;
     color: rgb(255, 174, 144);
   }
+}
+
+.busqueda {
+  display: none;
 }
 
 .link-title {

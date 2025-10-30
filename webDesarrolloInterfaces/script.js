@@ -3,6 +3,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // Llama a las funciones para poblar el carrusel y las tarjetas de juego
   CarrouselJuegos();
   buscarYMostrarJuegos();
+
+  const searchLink = document.getElementById('searchLink');
+  const busquedaDiv = document.querySelector('.busqueda');
+
+  searchLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    busquedaDiv.style.display = (busquedaDiv.style.display === 'block') ? 'none' : 'block';
+  });
+
+  // Referencia al campo de búsqueda
+  const inputBusqueda = document.getElementById('bus');
+
+  // Detectar cuando el usuario presione Enter
+  inputBusqueda.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      const valor = inputBusqueda.value.trim();
+      if (valor) {
+        buscarJuego(valor);
+      }
+    }
+  });
 });
 
 async function CarrouselJuegos() {
@@ -176,5 +197,70 @@ async function buscarYMostrarJuegos() {
   } catch (error) {
     console.error(error);
     container.innerHTML = "<h1>Error al cargar los juegos</h1><p>Peldon peldon peldon.</p>";
+  }
+}
+
+//Función para la barra de búsqueda
+async function buscarJuego(nombre) {
+  const container = document.getElementById("juegos-container");
+  container.innerHTML = `<h2>Buscando "${nombre}"...</h2>`;
+
+  const apiKey = "058117af7bb1482cb1f272040b80a596";
+
+  try {
+    const url = `https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(nombre)}&page_size=6`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Error en la búsqueda de juegos");
+    const data = await response.json();
+
+    if (!data.results || data.results.length === 0) {
+      container.innerHTML = `<h3>No se encontraron resultados para "${nombre}".</h3>`;
+      return;
+    }
+
+    container.innerHTML = '';
+
+    for (const game of data.results) {
+      const detailsResponse = await fetch(`https://api.rawg.io/api/games/${game.id}?key=${apiKey}`);
+      if (!detailsResponse.ok) continue;
+      const gameDetails = await detailsResponse.json();
+
+      const gameCard = document.createElement('div');
+      gameCard.className = 'game-card';
+
+      const flipCard = document.createElement('div');
+      flipCard.className = 'flip-card mb-4';
+      const flipCardInner = document.createElement('div');
+      flipCardInner.className = 'flip-card-inner';
+      const flipCardFront = document.createElement('div');
+      flipCardFront.className = 'flip-card-front';
+      const flipCardTitle = document.createElement('p');
+      flipCardTitle.className = 'title';
+      flipCardTitle.textContent = game.name;
+
+      flipCardFront.appendChild(flipCardTitle);
+      const rating = document.createElement('p');
+      rating.textContent = `Valoración: ${game.rating} / 5`;
+      flipCardFront.appendChild(rating);
+
+      const flipCardBack = document.createElement('div');
+      flipCardBack.className = 'flip-card-back';
+      const backTitle = document.createElement('p');
+      backTitle.className = 'title';
+      backTitle.textContent = 'Descripción';
+      const backDescription = document.createElement('p');
+      backDescription.textContent = cortarTexto(gameDetails.description_raw, 100);
+      flipCardBack.appendChild(backTitle);
+      flipCardBack.appendChild(backDescription);
+
+      flipCardInner.appendChild(flipCardFront);
+      flipCardInner.appendChild(flipCardBack);
+      flipCard.appendChild(flipCardInner);
+      gameCard.appendChild(flipCard);
+      container.appendChild(gameCard);
+    }
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = `<h3>Error al buscar el juego</h3>`;
   }
 }

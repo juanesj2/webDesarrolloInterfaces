@@ -139,7 +139,7 @@ async function buscarYMostrarJuegos(page = 1) {
     // Calculamos el total de páginas y renderizamos la paginación
     const totalGames = searchData.count;
     const totalPages = Math.ceil(totalGames / pageSize);
-    renderizarPaginacion(page, totalPages);
+    /* renderizarPaginacion(page, totalPages); */
 
     // Limpiamos el contenedor antes de añadir los nuevos juegos
     container.innerHTML = '';

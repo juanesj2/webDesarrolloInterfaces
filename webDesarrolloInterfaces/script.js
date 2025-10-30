@@ -96,11 +96,12 @@ function cortarTexto(texto, maxLongitud) {
 // Con la funcion async hacemos que el codigo dentro de la funcion se ejecute de forma asincrona
 // Es decir, que no bloquea la ejecucion del resto del codigo
 // Esto es util cuando hacemos llamadas a APIs o tareas que pueden tardar en completarse
-async function buscarYMostrarJuegos() {
+async function buscarYMostrarJuegos(page = 1) {
 
   // Referencias a los elementos del DOM
   const container = document.getElementById("juegos-container");
   container.innerHTML = '<h1>Cargando juegos...</h1>'; // Mensaje de carga inicial
+  const pageSize = 6;
 
   // usamos una excepcion para manejar errores
   try {
@@ -120,7 +121,7 @@ async function buscarYMostrarJuegos() {
     // split('T')[0] nos quedamos con la parte de la fecha (antes de la T) porque no quereos la hora
 
     // En la parte page_size=1 indicamos el numero de resultados a mostrar
-    const searchUrl = `https://api.rawg.io/api/games?key=${apiKey}&dates=${lastYear.toISOString().split('T')[0]},${today.toISOString().split('T')[0]}&ordering=-rating&page_size=6`;
+    const searchUrl = `https://api.rawg.io/api/games?key=${apiKey}&dates=${lastYear.toISOString().split('T')[0]},${today.toISOString().split('T')[0]}&ordering=-rating&page_size=${pageSize}&page=${page}`;
 
     // Buscamos los juegos
     // fetch es una funcion nativa de JS que permite hacer peticiones HTTP
@@ -134,6 +135,11 @@ async function buscarYMostrarJuegos() {
       container.innerHTML = "<h1>No se encontraron juegos</h1>";
       return;
     }
+
+    // Calculamos el total de páginas y renderizamos la paginación
+    const totalGames = searchData.count;
+    const totalPages = Math.ceil(totalGames / pageSize);
+    renderizarPaginacion(page, totalPages);
 
     // Limpiamos el contenedor antes de añadir los nuevos juegos
     container.innerHTML = '';
@@ -167,6 +173,13 @@ async function buscarYMostrarJuegos() {
       flipCardInner.className = 'flip-card-inner';
       const flipCardFront = document.createElement('div');
       flipCardFront.className = 'flip-card-front';
+
+      // Creamos la imagen para la parte frontal de la tarjeta
+      const gameImage = document.createElement('img');
+      gameImage.id = 'game-image';
+      gameImage.src = game.background_image;
+      gameImage.alt = `Imagen de ${game.name}`;
+
       const flipCardTitle = document.createElement('p');
       flipCardTitle.className = 'title';
       flipCardTitle.textContent = game.name;
@@ -174,15 +187,16 @@ async function buscarYMostrarJuegos() {
     //**********************  Fin contenedor flip card  ***************************************/
 
       // Añadimos la informacion a la flip card
+      flipCardFront.appendChild(gameImage);
       flipCardFront.appendChild(flipCardTitle);
       const rating = document.createElement('p');
-      rating.textContent = `Valoración: ${game.rating} / 5`;
+      rating.textContent = `Rating: ${game.rating} / 5`;
       flipCardFront.appendChild(rating);
       const flipCardBack = document.createElement('div');
       flipCardBack.className = 'flip-card-back';
       const backTitle = document.createElement('p');
       backTitle.className = 'title';
-      backTitle.textContent = 'Descripción';
+      backTitle.textContent = 'Description';
       const backDescription = document.createElement('p');
       backDescription.textContent =cortarTexto(gameDetails.description_raw, 100)|| 'Sin descripción disponible.';
       flipCardBack.appendChild(backTitle);
@@ -219,46 +233,7 @@ async function buscarJuego(nombre) {
     }
 
     container.innerHTML = '';
-
-    for (const game of data.results) {
-      const detailsResponse = await fetch(`https://api.rawg.io/api/games/${game.id}?key=${apiKey}`);
-      if (!detailsResponse.ok) continue;
-      const gameDetails = await detailsResponse.json();
-
-      const gameCard = document.createElement('div');
-      gameCard.className = 'game-card';
-
-      const flipCard = document.createElement('div');
-      flipCard.className = 'flip-card mb-4';
-      const flipCardInner = document.createElement('div');
-      flipCardInner.className = 'flip-card-inner';
-      const flipCardFront = document.createElement('div');
-      flipCardFront.className = 'flip-card-front';
-      const flipCardTitle = document.createElement('p');
-      flipCardTitle.className = 'title';
-      flipCardTitle.textContent = game.name;
-
-      flipCardFront.appendChild(flipCardTitle);
-      const rating = document.createElement('p');
-      rating.textContent = `Valoración: ${game.rating} / 5`;
-      flipCardFront.appendChild(rating);
-
-      const flipCardBack = document.createElement('div');
-      flipCardBack.className = 'flip-card-back';
-      const backTitle = document.createElement('p');
-      backTitle.className = 'title';
-      backTitle.textContent = 'Descripción';
-      const backDescription = document.createElement('p');
-      backDescription.textContent = cortarTexto(gameDetails.description_raw, 100);
-      flipCardBack.appendChild(backTitle);
-      flipCardBack.appendChild(backDescription);
-
-      flipCardInner.appendChild(flipCardFront);
-      flipCardInner.appendChild(flipCardBack);
-      flipCard.appendChild(flipCardInner);
-      gameCard.appendChild(flipCard);
-      container.appendChild(gameCard);
-    }
+    
   } catch (error) {
     console.error(error);
     container.innerHTML = `<h3>Error al buscar el juego</h3>`;

@@ -3,6 +3,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // Llama a las funciones para poblar el carrusel y las tarjetas de juego
   CarrouselJuegos();
   buscarYMostrarJuegos();
+
+  const searchLink = document.getElementById('searchLink');
+  const busquedaDiv = document.querySelector('.busqueda');
+
+  searchLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    busquedaDiv.style.display = (busquedaDiv.style.display === 'block') ? 'none' : 'block';
+  });
+
+  // Referencia al campo de búsqueda
+  const inputBusqueda = document.getElementById('bus');
+
+  // Detectar cuando el usuario presione Enter
+  inputBusqueda.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      const valor = inputBusqueda.value.trim();
+      if (valor) {
+        buscarJuego(valor);
+      }
+    }
+  });
 });
 
 async function CarrouselJuegos() {
@@ -193,89 +214,28 @@ async function buscarYMostrarJuegos(page = 1) {
   }
 }
 
-/*********************************** PAGINACION *********************************************/
+//Función para la barra de búsqueda
+async function buscarJuego(nombre) {
+  const container = document.getElementById("juegos-container");
+  container.innerHTML = `<h2>Buscando "${nombre}"...</h2>`;
 
-function renderizarPaginacion(currentPage, totalPages) {
-  // Cogemos el contenedor de la paginacion
-  const paginationContainer = document.getElementById('pagination-container');
-  paginationContainer.innerHTML = ''; // Limpiamos la paginación anterior
+  const apiKey = "058117af7bb1482cb1f272040b80a596";
 
-  /*********** Boton primera pagina ****************/ 
+  try {
+    const url = `https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(nombre)}&page_size=6`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Error en la búsqueda de juegos");
+    const data = await response.json();
 
-  const firstItem = document.createElement('li');
-  firstItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-  const firstLink = document.createElement('a');
-  firstLink.className = 'page-link';
-  firstLink.href = '#';
-  firstLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-backward-fast"></i></span>'; // Doble flecha para indicar "primera"
-  firstLink.onclick = (e) => {
-    e.preventDefault();
-    if (currentPage > 1) {
-      buscarYMostrarJuegos(1); // Ir a la página 1
+    if (!data.results || data.results.length === 0) {
+      container.innerHTML = `<h3>No se encontraron resultados para "${nombre}".</h3>`;
+      return;
     }
-  };
-  firstItem.appendChild(firstLink);
-  paginationContainer.appendChild(firstItem);
 
-  /******** FIN Boton primera pagina ****************/ 
-
-
-  /*********** Boton anterior pagina ****************/ 
-
-  const prevItem = document.createElement('li');
-  prevItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-  const prevLink = document.createElement('a');
-  prevLink.className = 'page-link';
-  prevLink.href = '#';
-  prevLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-backward-step"></i></span>';
-  prevLink.onclick = (e) => {
-    e.preventDefault();
-    if (currentPage > 1) {
-      buscarYMostrarJuegos(currentPage - 1);
-    }
-  };
-  prevItem.appendChild(prevLink);
-  paginationContainer.appendChild(prevItem);
-
-  /******** FIN Boton anterior pagina ****************/ 
-
-  /******************* Botones de número de página **************************/
-  let startPage = Math.max(1, currentPage - 1);
-  let endPage = Math.min(totalPages, currentPage + 1);
-
-  for (let i = startPage; i <= endPage; i++) {
-    const pageItem = document.createElement('li');
-    pageItem.className = `page-item ${i === currentPage ? 'active' : ''}`;
-    const pageLink = document.createElement('a');
-    pageLink.className = 'page-link';
-    pageLink.href = '#';
-    pageLink.textContent = i;
-    pageLink.onclick = (e) => {
-      e.preventDefault();
-      buscarYMostrarJuegos(i);
-    };
-    pageItem.appendChild(pageLink);
-    paginationContainer.appendChild(pageItem);
+    container.innerHTML = '';
+    
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = `<h3>Error al buscar el juego</h3>`;
   }
-  /**************** FIN Botones de número de página **************************/
-
-  /******************* Botones siguiente página **************************/
-  const nextItem = document.createElement('li');
-  nextItem.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-  const nextLink = document.createElement('a');
-  nextLink.className = 'page-link';
-  nextLink.href = '#';
-  nextLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-forward-step"></i></span>';
-  nextLink.onclick = (e) => {
-    e.preventDefault();
-    if (currentPage < totalPages) {
-      buscarYMostrarJuegos(currentPage + 1);
-    }
-  };
-  nextItem.appendChild(nextLink);
-  paginationContainer.appendChild(nextItem);
 }
-/**************** FIN Botones siguiente página **************************/
-
-
-/******************************** FIN PAGINACION *********************************************/

@@ -17,11 +17,13 @@ body {
   padding: 2rem;
 }
 
-
-#carouselExampleCaptions{
-  mask: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+/* He cambiado el color aquí*/
+#carouselExampleCaptions{ 
+  mask: linear-gradient(to right, transparent, black 20%, rgb(0, 0, 0) 80%, transparent);
 }
-
+#carouselExampleCaptionsDentro{ 
+  
+}
 
 /****************************** NavBar ******************************/
 
@@ -260,3 +262,111 @@ body {
   opacity: 1;
 }
 /****************************** Fin footer ******************************/
+/* Contenedor principal */
+#juego-dentro {
+  width: 100%;
+  height: 65vmax;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sección superior */
+#juegoArriba {
+  position: relative;
+  height: 60%;
+  display: flex;
+  flex-direction: column; /* apila título e info */
+  align-items: center; /* centra horizontalmente */
+  justify-content: center; /* centra verticalmente */
+  text-align: center;
+  color: white;
+  padding: 2vw;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Título centrado */
+#juegoArriba h1 {
+  font-size: 3vw; /* escala con la pantalla */
+  margin: 0;
+  z-index: 2;
+}
+
+/* Contenedor de descripción y nota */
+#juegoArriba .info {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* descripción más ancha */
+  grid-template-rows: 1fr 1fr;    /* dos filas iguales */
+  gap: 1.5vw;
+  width: 50%;
+  margin-top: 3vw;
+  z-index: 2;
+}
+
+/* Descripción */
+.descripcion {
+  grid-row: span 2; /* ocupa las dos filas */
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 10px;
+  padding: 1.2vw;
+  font-size: 1vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Nota */
+.nota {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 10px;
+  padding: 1vw;
+  text-align: center;
+  font-size: 1.2vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#bot{
+  width: 100%;
+  height: 25vmax;
+  display: flex;
+  flex-direction: row; 
+  justify-content: space-between;
+  align-items: stretch;
+}
+#detallesJuegos{
+  width: 50%;
+  background-color: #111; /* para que se vea como en la captura */
+  color: white;
+  padding: 2rem;
+  overflow-y: auto;
+}
+/* Contenedor del botón */
+
+
+.boton-steam {
+  display: inline-block;
+  width: 4vw;
+  height: 4vw;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  background-image: url('https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 60%;
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+}
+.steam-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boton-steam:hover {
+  background-color: #2a475e;
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+}

@@ -4,6 +4,47 @@ document.addEventListener('DOMContentLoaded', () => {
   CarrouselJuegos();
   buscarYMostrarJuegos();
 });
+const SELECTED_GAME_KEY = 'selectedGameId';
+
+function setSelectedGameId(id) {
+  if (!id) return;
+  sessionStorage.setItem(SELECTED_GAME_KEY, String(id));
+  dispatchGameSelected(id);
+}
+
+function getSelectedGameId() {
+  return sessionStorage.getItem(SELECTED_GAME_KEY);
+}
+
+function clearSelectedGameId() {
+  sessionStorage.removeItem(SELECTED_GAME_KEY);
+  dispatchGameSelected(null);
+}
+
+function dispatchGameSelected(id) {
+  // Emite un evento global para que listeners puedan reaccionar
+  const ev = new CustomEvent('gameSelected', { detail: { id } });
+  window.dispatchEvent(ev);
+}
+function attachMainClickHandlers(selector = '.juego-card', navigateToUrl = null) {
+  document.addEventListener('click', (e) => {
+    const card = e.target.closest(selector);
+    if (!card) return;
+
+    const id = card.dataset.gameId || card.getAttribute('data-game-id');
+    if (!id) return;
+
+    // guarda/reescribe la id seleccionada
+    setSelectedGameId(id);
+
+    // Si se pasa una URL, navegamos (opcional)
+    if (navigateToUrl) {
+      // Si prefieres enviar por query param en vez de sessionStorage:
+      // window.location.href = `${navigateToUrl}?id=${encodeURIComponent(id)}`;
+      window.location.href = navigateToUrl;
+    }
+  });
+}
 
 async function CarrouselJuegos() {
   // Esta es la KEY de la API y la URL de búsqueda
@@ -23,6 +64,8 @@ async function CarrouselJuegos() {
     const url = `https://api.rawg.io/api/games?key=${apiKey}&dates=${dates}&ordering=-rating&page_size=3`;
 
     const response = await fetch(url);
+
+
     if (!response.ok) throw new Error(`Error en la API: ${response.statusText}`);
     
     const data = await response.json();
@@ -56,12 +99,25 @@ async function CarrouselJuegos() {
         carouselInner.appendChild(carouselItem);
       });
     }
+
+
   } catch (error) {
     console.error('Error al cargar los juegos para el carrusel:', error);
     carouselInner.innerHTML = '<div class="carousel-item active"><p class="text-white bg-danger p-3">Error al cargar imágenes.</p></div>';
   }
+
 }
 
+
+
+/*    imagenFondo = document.createElement('div');
+    imagenFondo.style.backgroundImage = `url('${game.background_image}')`;
+    imagenFondo.style.backgroundSize = 'cover';
+    imagenFondo.style.backgroundPosition = 'center';
+    imagenFondo.style.height = '60%';
+    imagenFondo.style.width = '100%';
+    imagenFondo.style.display = 'flex';
+    imagenFondo.style.alignItems = 'center';*/ 
 // funcion que usaremos para recortar el texto a una longitud maxima
 function cortarTexto(texto, maxLongitud) {
   // Si no tenemos texto devolvemos un mensaje por defecto
@@ -71,7 +127,62 @@ function cortarTexto(texto, maxLongitud) {
   // Si el texto es mayor, lo recortamos y añadimos '...'
   return texto.substring(0, maxLongitud).trim() + '...';
 }
+async function imagenPortada() {
+  const apiKey = "058117af7bb1482cb1f272040b80a596";
+  const juegoArriba = document.getElementById('juegoArriba');
 
+  try {
+    const url = `https://api.rawg.io/api/games?key=${apiKey}&page_size=3`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Error en la API: ${response.statusText}`);
+
+    const data = await response.json();
+    const games = data.results;
+
+    if (games && games.length > 0) {
+      const firstGame = games[0];
+      const firstImage = firstGame.background_image;
+
+      if (firstImage) {
+        juegoArriba.style.backgroundImage = `url("${firstImage}")`;
+        juegoArriba.style.backgroundSize = 'cover';
+        juegoArriba.style.backgroundPosition = 'center';
+        juegoArriba.style.backgroundRepeat = 'no-repeat';
+      }
+
+      // Aquí recogemos el título del juego y otros datos como su fecha de salida y su puntuación
+      juegoArriba.querySelector('h1').textContent = firstGame.name;
+      juegoArriba.querySelector('.descripcion').textContent = firstGame.released
+        ? `Fecha de lanzamiento: ${firstGame.released}`
+        : 'Sin fecha de lanzamiento disponible';
+      juegoArriba.querySelector('.nota').textContent = `Rating: ${firstGame.rating}`;
+      
+            const detailsUrl = `https://api.rawg.io/api/games/${firstGame.id}?key=${apiKey}`;
+      const detailsResponse = await fetch(detailsUrl);
+      if (!detailsResponse.ok) throw new Error(`Error al obtener detalles: ${detailsResponse.statusText}`);
+
+      const detailsData = await detailsResponse.json();
+      const descripcion = detailsData.description_raw || 'Sin descripción disponible';
+      const descripcionCorta = cortarTexto(descripcion,550);
+
+      // Descripción
+       juegoArriba.querySelector('.descripcion').innerHTML = descripcionCorta;
+       const detalles = document.getElementById('detallesJuegos');
+       detalles.innerHTML = `<h2>${firstGame.name}</h2>
+                            <p><strong>Release date:</strong> ${firstGame.released || 'Sin fecha'}</p>
+                            <p><strong>Genre:</strong> ${firstGame.genres.map(g => g.name).join(', ')}</p>
+                            <p><strong>Developer:</strong> ${firstGame.developers?.[0]?.name || 'Desconocido'}</p>
+                            <p><strong>Minimum requirements:</strong></p>
+                            <p>${detailsData.platforms?.[0]?.requirements?.minimum || 'No disponibles'}</p>
+                            <p><strong>Recomended requierements:</strong></p>
+                            <p>${detailsData.platforms?.[0]?.requirements?.recommended || 'No disponibles'}</p>`;
+      
+    }
+  } catch (error) {
+    console.error('Error al cargar imágenes:', error);
+  }
+}
+document.addEventListener('DOMContentLoaded', imagenPortada);
 // Con la funcion async hacemos que el codigo dentro de la funcion se ejecute de forma asincrona
 // Es decir, que no bloquea la ejecucion del resto del codigo
 // Esto es util cuando hacemos llamadas a APIs o tareas que pueden tardar en completarse
@@ -177,4 +288,6 @@ async function buscarYMostrarJuegos() {
     console.error(error);
     container.innerHTML = "<h1>Error al cargar los juegos</h1><p>Peldon peldon peldon.</p>";
   }
+
 }
+

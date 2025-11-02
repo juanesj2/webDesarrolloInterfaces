@@ -24,6 +24,10 @@ body {
 #carouselExampleCaptionsDentro{ 
   
 }
+#carouselJuegoSide{ 
+  mask: linear-gradient(to right, transparent, black 20%, rgb(0, 0, 0) 80%, transparent);
+}
+
 
 /****************************** NavBar ******************************/
 
@@ -128,6 +132,7 @@ body {
   height: 254px;
   perspective: 1000px;
   font-family: sans-serif;
+  cursor: pointer; /*Esto es para que recoja bien los clicks en la flipcard*/
 }
 
 .title {
@@ -144,6 +149,7 @@ body {
   text-align: center;
   transition: transform 0.8s;
   transform-style: preserve-3d;
+  pointer-events: all;
 }
 
 .flip-card:hover .flip-card-inner {
@@ -162,6 +168,7 @@ body {
   backface-visibility: hidden;
   border: 1px solid coral;
   border-radius: 1rem;
+  pointer-events: all;
 }
 
 .flip-card-front {

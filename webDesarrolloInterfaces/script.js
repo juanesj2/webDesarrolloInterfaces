@@ -1,8 +1,19 @@
 // Nos aseguramos de que el DOM esté completamente cargado antes de ejecutar el script
 document.addEventListener('DOMContentLoaded', () => {
   // Llama a las funciones para poblar el carrusel y las tarjetas de juego
-  CarrouselJuegos();
-  buscarYMostrarJuegos();
+  const currentPage = window.location.pathname;
+
+  // Solo ejecutar el carrusel de portada en index.html
+  if (currentPage.includes("index.html") || currentPage.endsWith("/")) {
+    CarrouselJuegos();
+    buscarYMostrarJuegos();
+  }
+
+  // Solo ejecutar el carrusel de capturas en side.html
+  if (currentPage.includes("side.html")) {
+    CarrouselJuegoSide();
+    juegoSide();
+  }
 });
 const SELECTED_GAME_KEY = 'selectedGameId';
 
@@ -26,25 +37,7 @@ function dispatchGameSelected(id) {
   const ev = new CustomEvent('gameSelected', { detail: { id } });
   window.dispatchEvent(ev);
 }
-function attachMainClickHandlers(selector = '.juego-card', navigateToUrl = null) {
-  document.addEventListener('click', (e) => {
-    const card = e.target.closest(selector);
-    if (!card) return;
 
-    const id = card.dataset.gameId || card.getAttribute('data-game-id');
-    if (!id) return;
-
-    // guarda/reescribe la id seleccionada
-    setSelectedGameId(id);
-
-    // Si se pasa una URL, navegamos (opcional)
-    if (navigateToUrl) {
-      // Si prefieres enviar por query param en vez de sessionStorage:
-      // window.location.href = `${navigateToUrl}?id=${encodeURIComponent(id)}`;
-      window.location.href = navigateToUrl;
-    }
-  });
-}
 
 async function CarrouselJuegos() {
   // Esta es la KEY de la API y la URL de búsqueda
@@ -127,20 +120,22 @@ function cortarTexto(texto, maxLongitud) {
   // Si el texto es mayor, lo recortamos y añadimos '...'
   return texto.substring(0, maxLongitud).trim() + '...';
 }
-async function imagenPortada() {
+async function juegoSide() {
   const apiKey = "058117af7bb1482cb1f272040b80a596";
   const juegoArriba = document.getElementById('juegoArriba');
-
+  
   try {
-    const url = `https://api.rawg.io/api/games?key=${apiKey}&page_size=3`;
+     const gameId = getSelectedGameId();
+    if (!gameId) {
+      console.warn("No hay ID de juego guardado en sessionStorage");
+      return;
+    }
+    const url = `https://api.rawg.io/api/games/${gameId}?key=${apiKey}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Error en la API: ${response.statusText}`);
 
-    const data = await response.json();
-    const games = data.results;
-
-    if (games && games.length > 0) {
-      const firstGame = games[0];
+    const detailsData = await response.json();
+      const firstGame = detailsData;
       const firstImage = firstGame.background_image;
 
       if (firstImage) {
@@ -149,24 +144,14 @@ async function imagenPortada() {
         juegoArriba.style.backgroundPosition = 'center';
         juegoArriba.style.backgroundRepeat = 'no-repeat';
       }
-
+      
       // Aquí recogemos el título del juego y otros datos como su fecha de salida y su puntuación
       juegoArriba.querySelector('h1').textContent = firstGame.name;
-      juegoArriba.querySelector('.descripcion').textContent = firstGame.released
-        ? `Fecha de lanzamiento: ${firstGame.released}`
-        : 'Sin fecha de lanzamiento disponible';
       juegoArriba.querySelector('.nota').textContent = `Rating: ${firstGame.rating}`;
-      
-            const detailsUrl = `https://api.rawg.io/api/games/${firstGame.id}?key=${apiKey}`;
-      const detailsResponse = await fetch(detailsUrl);
-      if (!detailsResponse.ok) throw new Error(`Error al obtener detalles: ${detailsResponse.statusText}`);
-
-      const detailsData = await detailsResponse.json();
       const descripcion = detailsData.description_raw || 'Sin descripción disponible';
       const descripcionCorta = cortarTexto(descripcion,550);
-
-      // Descripción
        juegoArriba.querySelector('.descripcion').innerHTML = descripcionCorta;
+
        const detalles = document.getElementById('detallesJuegos');
        detalles.innerHTML = `<h2>${firstGame.name}</h2>
                             <p><strong>Release date:</strong> ${firstGame.released || 'Sin fecha'}</p>
@@ -176,21 +161,145 @@ async function imagenPortada() {
                             <p>${detailsData.platforms?.[0]?.requirements?.minimum || 'No disponibles'}</p>
                             <p><strong>Recomended requierements:</strong></p>
                             <p>${detailsData.platforms?.[0]?.requirements?.recommended || 'No disponibles'}</p>`;
-      
-    }
+                            // 🔹 Asignar enlace de Steam al botón existente
+const steamBtn = document.querySelector('.boton-steam');
+
+if (steamBtn && firstGame) {
+  let steamUrl = "";
+  const steamStore = Array.isArray(firstGame.stores)
+    ? firstGame.stores.find(s => s.store?.slug === 'steam')
+    : null;
+
+  // Usar el enlace directo de RAWG si existe
+  if (steamStore?.url) {
+    steamUrl = steamStore.url;
+  }
+  // Si no hay enlace directo, buscar el juego en Steam por nombre
+  else if (firstGame.name) {
+    steamUrl = `https://store.steampowered.com/search/?term=${encodeURIComponent(firstGame.name)}`;
+  }
+
+  // Último recurso: portada principal de Steam
+  else {
+    steamUrl = "https://store.steampowered.com/";
+  }
+
+  steamBtn.setAttribute('href', steamUrl);
+}
+
   } catch (error) {
-    console.error('Error al cargar imágenes:', error);
+    console.error('Error al cargar el juego:', error);
   }
 }
-document.addEventListener('DOMContentLoaded', imagenPortada);
+document.addEventListener('DOMContentLoaded', juegoSide);
+
+async function CarrouselJuegoSide() {
+  const apiKey = "058117af7bb1482cb1f272040b80a596";
+  const carouselId = "carouselJuegoSide";
+  const carouselIndicators = document.getElementById("carousel-indicators-side");
+  const carouselInner = document.getElementById("carousel-inner-side");
+  const carouselEl = document.getElementById(carouselId);
+
+  if (!carouselIndicators || !carouselInner || !carouselEl) return;
+
+  // Limpia contenido previo
+  carouselIndicators.innerHTML = "";
+  carouselInner.innerHTML = "";
+
+  try {
+    const gameId = getSelectedGameId();
+    if (!gameId) return;
+
+    // Obtener capturas del juego
+    const res = await fetch(`https://api.rawg.io/api/games/${gameId}/screenshots?key=${apiKey}`);
+    if (!res.ok) throw new Error(`Error en la API: ${res.statusText}`);
+    const data = await res.json();
+
+    let screenshots = Array.isArray(data.results) ? data.results : [];
+
+    // Fallback: si no hay screenshots, usar background_image del juego
+    if (screenshots.length === 0) {
+      const fallback = await fetch(`https://api.rawg.io/api/games/${gameId}?key=${apiKey}`);
+      if (fallback.ok) {
+        const gameData = await fallback.json();
+        if (gameData.background_image) {
+          screenshots = [{ image: gameData.background_image }];
+        }
+      }
+    }
+
+    if (screenshots.length === 0) {
+      carouselInner.innerHTML = `
+        <div class="carousel-item active">
+          <div class="p-4 text-center">No hay imágenes disponibles.</div>
+        </div>`;
+      return;
+    }
+
+    // Crear dinámicamente slides e indicadores
+    screenshots.forEach((shot, index) => {
+      const isActive = index === 0;
+
+      // Indicador
+      const indicator = document.createElement("button");
+      indicator.type = "button";
+      indicator.dataset.bsTarget = `#${carouselId}`;
+      indicator.dataset.bsSlideTo = index.toString();
+      indicator.ariaLabel = `Slide ${index + 1}`;
+      if (isActive) {
+        indicator.classList.add("active");
+        indicator.ariaCurrent = "true";
+      }
+      carouselIndicators.appendChild(indicator);
+
+      // Slide
+      const item = document.createElement("div");
+      item.className = `carousel-item${isActive ? " active" : ""}`;
+
+      const img = document.createElement("img");
+      img.src = shot.image;
+      img.className = "d-block w-100";
+      img.alt = `Captura ${index + 1}`;
+      img.style.objectFit = "cover";
+      img.style.height = "500px";
+
+      item.appendChild(img);
+      carouselInner.appendChild(item);
+    });
+
+    // Reinicializar carrusel correctamente
+    const prevInstance = bootstrap.Carousel.getInstance(carouselEl);
+    if (prevInstance) prevInstance.dispose();
+
+    const carousel = new bootstrap.Carousel(carouselEl, {
+      interval: 4000,
+      ride: true,
+      wrap: true,
+      pause: false
+    });
+
+    carousel.to(0);
+    carousel.cycle();
+
+  } catch (err) {
+    console.error("Error cargando el carrusel:", err);
+    carouselInner.innerHTML = `
+      <div class="carousel-item active">
+        <div class="p-4 text-center text-danger">Error al cargar imágenes.</div>
+      </div>`;
+  }
+}
+
+
 // Con la funcion async hacemos que el codigo dentro de la funcion se ejecute de forma asincrona
 // Es decir, que no bloquea la ejecucion del resto del codigo
 // Esto es util cuando hacemos llamadas a APIs o tareas que pueden tardar en completarse
-async function buscarYMostrarJuegos() {
+async function buscarYMostrarJuegos(page = 1) {
 
   // Referencias a los elementos del DOM
   const container = document.getElementById("juegos-container");
   container.innerHTML = '<h1>Cargando juegos...</h1>'; // Mensaje de carga inicial
+  const pageSize = 6;
 
   // usamos una excepcion para manejar errores
   try {
@@ -210,7 +319,7 @@ async function buscarYMostrarJuegos() {
     // split('T')[0] nos quedamos con la parte de la fecha (antes de la T) porque no quereos la hora
 
     // En la parte page_size=1 indicamos el numero de resultados a mostrar
-    const searchUrl = `https://api.rawg.io/api/games?key=${apiKey}&dates=${lastYear.toISOString().split('T')[0]},${today.toISOString().split('T')[0]}&ordering=-rating&page_size=6`;
+    const searchUrl = `https://api.rawg.io/api/games?key=${apiKey}&dates=${lastYear.toISOString().split('T')[0]},${today.toISOString().split('T')[0]}&ordering=-rating&page_size=${pageSize}&page=${page}`;
 
     // Buscamos los juegos
     // fetch es una funcion nativa de JS que permite hacer peticiones HTTP
@@ -224,6 +333,11 @@ async function buscarYMostrarJuegos() {
       container.innerHTML = "<h1>No se encontraron juegos</h1>";
       return;
     }
+
+    // Calculamos el total de páginas y renderizamos la paginación
+    const totalGames = searchData.count;
+    const totalPages = Math.ceil(totalGames / pageSize);
+    renderizarPaginacion(page, totalPages);
 
     // Limpiamos el contenedor antes de añadir los nuevos juegos
     container.innerHTML = '';
@@ -257,6 +371,18 @@ async function buscarYMostrarJuegos() {
       flipCardInner.className = 'flip-card-inner';
       const flipCardFront = document.createElement('div');
       flipCardFront.className = 'flip-card-front';
+      flipCard.addEventListener("click", () => {
+        alert(`Click detectado: ${game.name} (${game.id})`);
+         setSelectedGameId(game.id);
+            window.location.href = `side.html?id=${game.id}`;
+      });
+
+      // Creamos la imagen para la parte frontal de la tarjeta
+      const gameImage = document.createElement('img');
+      gameImage.id = 'game-image';
+      gameImage.src = game.background_image;
+      gameImage.alt = `Imagen de ${game.name}`;
+
       const flipCardTitle = document.createElement('p');
       flipCardTitle.className = 'title';
       flipCardTitle.textContent = game.name;
@@ -264,15 +390,16 @@ async function buscarYMostrarJuegos() {
     //**********************  Fin contenedor flip card  ***************************************/
 
       // Añadimos la informacion a la flip card
+      flipCardFront.appendChild(gameImage);
       flipCardFront.appendChild(flipCardTitle);
       const rating = document.createElement('p');
-      rating.textContent = `Valoración: ${game.rating} / 5`;
+      rating.textContent = `Rating: ${game.rating} / 5`;
       flipCardFront.appendChild(rating);
       const flipCardBack = document.createElement('div');
       flipCardBack.className = 'flip-card-back';
       const backTitle = document.createElement('p');
       backTitle.className = 'title';
-      backTitle.textContent = 'Descripción';
+      backTitle.textContent = 'Description';
       const backDescription = document.createElement('p');
       backDescription.textContent =cortarTexto(gameDetails.description_raw, 100)|| 'Sin descripción disponible.';
       flipCardBack.appendChild(backTitle);
@@ -288,6 +415,115 @@ async function buscarYMostrarJuegos() {
     console.error(error);
     container.innerHTML = "<h1>Error al cargar los juegos</h1><p>Peldon peldon peldon.</p>";
   }
+}
+function renderizarPaginacion(currentPage, totalPages) {
+  // Cogemos el contenedor de la paginacion
+  const paginationContainer = document.getElementById('pagination-container');
+  paginationContainer.innerHTML = ''; // Limpiamos la paginación anterior
 
+  /*********** Boton primera pagina ****************/ 
+
+  const firstItem = document.createElement('li');
+  firstItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+  const firstLink = document.createElement('a');
+  firstLink.className = 'page-link';
+  firstLink.href = '#';
+  firstLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-backward-fast"></i></span>'; // Doble flecha para indicar "primera"
+  firstLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage > 1) {
+      buscarYMostrarJuegos(1); // Ir a la página 1
+    }
+  };
+  firstItem.appendChild(firstLink);
+  paginationContainer.appendChild(firstItem);
+
+  /******** FIN Boton primera pagina ****************/ 
+
+
+  /*********** Boton anterior pagina ****************/ 
+
+  const prevItem = document.createElement('li');
+  prevItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+  const prevLink = document.createElement('a');
+  prevLink.className = 'page-link';
+  prevLink.href = '#';
+  prevLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-backward-step"></i></span>';
+  prevLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage > 1) {
+      buscarYMostrarJuegos(currentPage - 1);
+    }
+  };
+  prevItem.appendChild(prevLink);
+  paginationContainer.appendChild(prevItem);
+
+  /******** FIN Boton anterior pagina ****************/ 
+
+  /******************* Botones de número de página **************************/
+  let startPage = Math.max(1, currentPage - 1);
+  let endPage = Math.min(totalPages, currentPage + 1);
+
+  for (let i = startPage; i <= endPage; i++) {
+    const pageItem = document.createElement('li');
+    pageItem.className = `page-item ${i === currentPage ? 'active' : ''}`;
+    const pageLink = document.createElement('a');
+    pageLink.className = 'page-link';
+    pageLink.href = '#';
+    pageLink.textContent = i;
+    pageLink.onclick = (e) => {
+      e.preventDefault();
+      buscarYMostrarJuegos(i);
+    };
+    pageItem.appendChild(pageLink);
+    paginationContainer.appendChild(pageItem);
+  }
+  /**************** FIN Botones de número de página **************************/
+
+  /******************* Botones siguiente página **************************/
+  const nextItem = document.createElement('li');
+  nextItem.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+  const nextLink = document.createElement('a');
+  nextLink.className = 'page-link';
+  nextLink.href = '#';
+  nextLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-forward-step"></i></span>';
+  nextLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage < totalPages) {
+      buscarYMostrarJuegos(currentPage + 1);
+    }
+  };
+  nextItem.appendChild(nextLink);
+  paginationContainer.appendChild(nextItem);
+}
+/**************** FIN Botones siguiente página **************************/
+
+
+/******************************** FIN PAGINACION *********************************************/
+
+//Función para la barra de búsqueda
+async function buscarJuego(nombre) {
+  const container = document.getElementById("juegos-container");
+  container.innerHTML = `<h2>Buscando "${nombre}"...</h2>`;
+
+  const apiKey = "058117af7bb1482cb1f272040b80a596";
+
+  try {
+    const url = `https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(nombre)}&page_size=6`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Error en la búsqueda de juegos");
+    const data = await response.json();
+
+    if (!data.results || data.results.length === 0) {
+      container.innerHTML = `<h3>No se encontraron resultados para "${nombre}".</h3>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = `<h3>Error al buscar el juego</h3>`;
+  }
 }
 

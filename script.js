@@ -96,11 +96,12 @@ function cortarTexto(texto, maxLongitud) {
 // Con la funcion async hacemos que el codigo dentro de la funcion se ejecute de forma asincrona
 // Es decir, que no bloquea la ejecucion del resto del codigo
 // Esto es util cuando hacemos llamadas a APIs o tareas que pueden tardar en completarse
-async function buscarYMostrarJuegos() {
+async function buscarYMostrarJuegos(page = 1) {
 
   // Referencias a los elementos del DOM
   const container = document.getElementById("juegos-container");
   container.innerHTML = '<h1>Cargando juegos...</h1>'; // Mensaje de carga inicial
+  const pageSize = 6;
 
   // usamos una excepcion para manejar errores
   try {
@@ -120,7 +121,7 @@ async function buscarYMostrarJuegos() {
     // split('T')[0] nos quedamos con la parte de la fecha (antes de la T) porque no quereos la hora
 
     // En la parte page_size=1 indicamos el numero de resultados a mostrar
-    const searchUrl = `https://api.rawg.io/api/games?key=${apiKey}&dates=${lastYear.toISOString().split('T')[0]},${today.toISOString().split('T')[0]}&ordering=-rating&page_size=6`;
+    const searchUrl = `https://api.rawg.io/api/games?key=${apiKey}&dates=${lastYear.toISOString().split('T')[0]},${today.toISOString().split('T')[0]}&ordering=-rating&page_size=${pageSize}&page=${page}`;
 
     // Buscamos los juegos
     // fetch es una funcion nativa de JS que permite hacer peticiones HTTP
@@ -134,6 +135,11 @@ async function buscarYMostrarJuegos() {
       container.innerHTML = "<h1>No se encontraron juegos</h1>";
       return;
     }
+
+    // Calculamos el total de páginas y renderizamos la paginación
+    const totalGames = searchData.count;
+    const totalPages = Math.ceil(totalGames / pageSize);
+    renderizarPaginacion(page, totalPages);
 
     // Limpiamos el contenedor antes de añadir los nuevos juegos
     container.innerHTML = '';
@@ -167,6 +173,13 @@ async function buscarYMostrarJuegos() {
       flipCardInner.className = 'flip-card-inner';
       const flipCardFront = document.createElement('div');
       flipCardFront.className = 'flip-card-front';
+
+      // Creamos la imagen para la parte frontal de la tarjeta
+      const gameImage = document.createElement('img');
+      gameImage.id = 'game-image';
+      gameImage.src = game.background_image;
+      gameImage.alt = `Imagen de ${game.name}`;
+
       const flipCardTitle = document.createElement('p');
       flipCardTitle.className = 'title';
       flipCardTitle.textContent = game.name;
@@ -174,15 +187,16 @@ async function buscarYMostrarJuegos() {
     //**********************  Fin contenedor flip card  ***************************************/
 
       // Añadimos la informacion a la flip card
+      flipCardFront.appendChild(gameImage);
       flipCardFront.appendChild(flipCardTitle);
       const rating = document.createElement('p');
-      rating.textContent = `Valoración: ${game.rating} / 5`;
+      rating.textContent = `Rating: ${game.rating} / 5`;
       flipCardFront.appendChild(rating);
       const flipCardBack = document.createElement('div');
       flipCardBack.className = 'flip-card-back';
       const backTitle = document.createElement('p');
       backTitle.className = 'title';
-      backTitle.textContent = 'Descripción';
+      backTitle.textContent = 'Description';
       const backDescription = document.createElement('p');
       backDescription.textContent =cortarTexto(gameDetails.description_raw, 100)|| 'Sin descripción disponible.';
       flipCardBack.appendChild(backTitle);
@@ -200,10 +214,99 @@ async function buscarYMostrarJuegos() {
   }
 }
 
+/*********************************** PAGINACION *********************************************/
+
+function renderizarPaginacion(currentPage, totalPages) {
+  // Cogemos el contenedor de la paginacion
+  const paginationContainer = document.getElementById('pagination-container');
+  paginationContainer.innerHTML = ''; // Limpiamos la paginación anterior
+
+  /*********** Boton primera pagina ****************/ 
+
+  const firstItem = document.createElement('li');
+  firstItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+  const firstLink = document.createElement('a');
+  firstLink.className = 'page-link';
+  firstLink.href = '#';
+  firstLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-backward-fast"></i></span>'; // Doble flecha para indicar "primera"
+  firstLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage > 1) {
+      buscarYMostrarJuegos(1); // Ir a la página 1
+    }
+  };
+  firstItem.appendChild(firstLink);
+  paginationContainer.appendChild(firstItem);
+
+  /******** FIN Boton primera pagina ****************/ 
+
+
+  /*********** Boton anterior pagina ****************/ 
+
+  const prevItem = document.createElement('li');
+  prevItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+  const prevLink = document.createElement('a');
+  prevLink.className = 'page-link';
+  prevLink.href = '#';
+  prevLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-backward-step"></i></span>';
+  prevLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage > 1) {
+      buscarYMostrarJuegos(currentPage - 1);
+    }
+  };
+  prevItem.appendChild(prevLink);
+  paginationContainer.appendChild(prevItem);
+
+  /******** FIN Boton anterior pagina ****************/ 
+
+  /******************* Botones de número de página **************************/
+  let startPage = Math.max(1, currentPage - 1);
+  let endPage = Math.min(totalPages, currentPage + 1);
+
+  for (let i = startPage; i <= endPage; i++) {
+    const pageItem = document.createElement('li');
+    pageItem.className = `page-item ${i === currentPage ? 'active' : ''}`;
+    const pageLink = document.createElement('a');
+    pageLink.className = 'page-link';
+    pageLink.href = '#';
+    pageLink.textContent = i;
+    pageLink.onclick = (e) => {
+      e.preventDefault();
+      buscarYMostrarJuegos(i);
+    };
+    pageItem.appendChild(pageLink);
+    paginationContainer.appendChild(pageItem);
+  }
+  /**************** FIN Botones de número de página **************************/
+
+  /******************* Botones siguiente página **************************/
+  const nextItem = document.createElement('li');
+  nextItem.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+  const nextLink = document.createElement('a');
+  nextLink.className = 'page-link';
+  nextLink.href = '#';
+  nextLink.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-forward-step"></i></span>';
+  nextLink.onclick = (e) => {
+    e.preventDefault();
+    if (currentPage < totalPages) {
+      buscarYMostrarJuegos(currentPage + 1);
+    }
+  };
+  nextItem.appendChild(nextLink);
+  paginationContainer.appendChild(nextItem);
+}
+/**************** FIN Botones siguiente página **************************/
+
+
+/******************************** FIN PAGINACION *********************************************/
+
 //Función para la barra de búsqueda
 async function buscarJuego(nombre) {
   const container = document.getElementById("juegos-container");
   container.innerHTML = `<h2>Buscando "${nombre}"...</h2>`;
+
+  document.getElementById("tituloSeccion").style.display = "none";
 
   const apiKey = "058117af7bb1482cb1f272040b80a596";
 
@@ -234,33 +337,149 @@ async function buscarJuego(nombre) {
       flipCardInner.className = 'flip-card-inner';
       const flipCardFront = document.createElement('div');
       flipCardFront.className = 'flip-card-front';
-      const flipCardTitle = document.createElement('p');
-      flipCardTitle.className = 'title';
-      flipCardTitle.textContent = game.name;
-
-      flipCardFront.appendChild(flipCardTitle);
-      const rating = document.createElement('p');
-      rating.textContent = `Valoración: ${game.rating} / 5`;
-      flipCardFront.appendChild(rating);
-
+      flipCardFront.innerHTML = `
+        <img id="game-image" src="${game.background_image}" alt="${game.name}">
+        <p class="title">${game.name}</p>
+        <p>Rating: ${game.rating} / 5</p>
+      `;
       const flipCardBack = document.createElement('div');
       flipCardBack.className = 'flip-card-back';
-      const backTitle = document.createElement('p');
-      backTitle.className = 'title';
-      backTitle.textContent = 'Descripción';
-      const backDescription = document.createElement('p');
-      backDescription.textContent = cortarTexto(gameDetails.description_raw, 100);
-      flipCardBack.appendChild(backTitle);
-      flipCardBack.appendChild(backDescription);
-
+      flipCardBack.innerHTML = `
+        <p class="title">Descripción</p>
+        <p>${cortarTexto(gameDetails.description_raw, 100)}</p>
+      `;
       flipCardInner.appendChild(flipCardFront);
       flipCardInner.appendChild(flipCardBack);
       flipCard.appendChild(flipCardInner);
       gameCard.appendChild(flipCard);
       container.appendChild(gameCard);
     }
+    
   } catch (error) {
     console.error(error);
     container.innerHTML = `<h3>Error al buscar el juego</h3>`;
   }
+}
+
+// --- Toggle para el enlace "Popular" ---
+const links = document.querySelectorAll('a.link');
+let popularAnchor = null;
+
+// Buscar el enlace cuyo texto es "Popular"
+links.forEach(link => {
+  const title = link.querySelector('.link-title');
+  if (title && title.textContent.trim() === 'Popular') {
+    popularAnchor = link;
+  }
+});
+
+if (popularAnchor) {
+  const popularIconContainer = popularAnchor.querySelector('.link-icon');
+  const popularText = popularAnchor.querySelector('.link-title');
+  const juegosContainer = document.getElementById("juegos-container");
+  const tituloPrincipal = document.querySelector("h1");
+
+  let modoTopRated = false;
+  const apiKey = "058117af7bb1482cb1f272040b80a596";
+
+  // Guardamos el SVG original
+  const svgOriginal = popularIconContainer.innerHTML;
+
+  // SVG alternativo
+  const svgStar = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" fill="currentColor" viewBox="0 0 256 256">
+      <rect width="256" height="256" fill="none"></rect>
+      <path
+        d="M239.2,97.8a8,8,0,0,0-6.3-5.5l-64.1-9.3L140.9,23.5a8,8,0,0,0-14.8,0L87.2,83l-64.1,9.3a8,8,0,0,0-4.4,13.7l46.4,45.2L52.2,216a8,8,0,0,0,11.6,8.4L128,195.4l64.2,29a8,8,0,0,0,11.6-8.4l-12.9-65.8,46.4-45.2A8,8,0,0,0,239.2,97.8Z"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="10"
+        fill="none"
+      ></path>
+    </svg>
+  `;
+
+  popularAnchor.addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    if (!modoTopRated) {
+      // --- Cambiar a modo "Top Rated" ---
+      popularText.textContent = "Top Rated";
+      popularIconContainer.innerHTML = svgStar;
+      if (tituloPrincipal) tituloPrincipal.textContent = "Los juegos más jugados";
+      modoTopRated = true;
+
+      juegosContainer.innerHTML = "<h2>Cargando juegos más jugados...</h2>";
+
+      try {
+        const url = `https://api.rawg.io/api/games?key=${apiKey}&ordering=-added&page_size=6`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Error al cargar los juegos populares");
+        const data = await response.json();
+
+        juegosContainer.innerHTML = "";
+
+        for (const game of data.results) {
+          const detailsResponse = await fetch(`https://api.rawg.io/api/games/${game.id}?key=${apiKey}`);
+          if (!detailsResponse.ok) continue;
+          const gameDetails = await detailsResponse.json();
+
+          const gameCard = document.createElement("div");
+          gameCard.className = "game-card";
+
+          const flipCard = document.createElement("div");
+          flipCard.className = "flip-card mb-4";
+          const flipCardInner = document.createElement("div");
+          flipCardInner.className = "flip-card-inner";
+
+          const flipCardFront = document.createElement("div");
+          flipCardFront.className = "flip-card-front";
+          flipCardFront.innerHTML = `
+            <img id="game-image" src="${game.background_image}" alt="${game.name}">
+            <p class="title">${game.name}</p>
+            <p>Rating: ${game.rating} / 5</p>
+          `;
+
+          const flipCardBack = document.createElement("div");
+          flipCardBack.className = "flip-card-back";
+          flipCardBack.innerHTML = `
+            <p class="title">Descripción</p>
+            <p>${cortarTexto(gameDetails.description_raw, 100)}</p>
+          `;
+
+          flipCardInner.appendChild(flipCardFront);
+          flipCardInner.appendChild(flipCardBack);
+          flipCard.appendChild(flipCardInner);
+          gameCard.appendChild(flipCard);
+          juegosContainer.appendChild(gameCard);
+        }
+      } catch (error) {
+        console.error(error);
+        juegosContainer.innerHTML = "<h3>Error al cargar los juegos más jugados</h3>";
+      }
+    } else {
+      // --- Volver a modo "Popular" ---
+      popularText.textContent = "Popular";
+      popularIconContainer.innerHTML = svgOriginal;
+      if (tituloPrincipal) tituloPrincipal.textContent = "Los mejores juegos del último año";
+      modoTopRated = false;
+
+      juegosContainer.innerHTML = "<h2>Cargando los mejores juegos del año...</h2>";
+
+      if (typeof buscarYMostrarJuegos === "function") {
+        buscarYMostrarJuegos();
+      }
+    }
+  });
+}
+
+// recarga el index al pulsar en Home
+const homeLink = document.getElementById("homeLink");
+
+if (homeLink) {
+  homeLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.location.href = "index.html"; 
+  });
 }

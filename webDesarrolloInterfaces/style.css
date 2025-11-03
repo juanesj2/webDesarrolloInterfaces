@@ -1,3 +1,19 @@
+/* Modificando los colores por defecto de bootstrap */
+.pagination-dark .page-item.active .page-link {
+    z-index: 3;
+    color: #fff;
+    background-color: rgb(245, 116, 69) !important;
+    border-color: rgb(241, 104, 54) !important;
+}
+
+.page-link:focus {
+    z-index: 3;
+    color: rgb(245, 116, 69) !important;
+    background-color: #e9ecef;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(245, 116, 69, .25) !important;
+}
+
 body {
   font-family: Arial, sans-serif;
   background-color: #121212;
@@ -48,7 +64,7 @@ body {
   width: 50%;
   height: 50px;
   padding: 0.5rem;
-  background-color: #fff;
+  background-color: #3b3b3b;
   position: relative;
   display: flex;
   justify-content: center;
@@ -82,7 +98,7 @@ body {
     transform: translateX(100%);
     transition: transform 0.3s ease-in;
     transform-origin: center right;
-    background-color: #eee;
+    background-color: #5e5d5d;
   }
 
   &:hover,
@@ -112,6 +128,10 @@ body {
   }
 }
 
+.busqueda {
+  display: none;
+}
+
 .link-title {
   transform: translateX(100%);
   transition: transform 0.2s ease-in;
@@ -123,6 +143,9 @@ body {
 }
 /****************************** Fin NavBar ******************************/
 
+.carousel-caption{
+  background-color: #00000070;
+}
 
 /****************************** FlipCart ******************************/
 /* From Uiverse.io by joe-watson-sbf */ 
@@ -162,6 +185,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   width: 100%;
   height: 100%;
   -webkit-backface-visibility: hidden;
@@ -182,6 +206,14 @@ body {
      bisque 40%, rgb(255, 185, 160) 78%);
   color: white;
   transform: rotateY(180deg);
+}
+
+#game-image{
+  height: 160px;
+  width: 96%;
+  object-fit: cover;
+  border-radius: 1rem 1rem 0 0;
+  margin-top: 5px;
 }
 /****************************** Fin FlipCart ******************************/
 

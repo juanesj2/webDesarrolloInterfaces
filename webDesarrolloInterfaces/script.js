@@ -14,6 +14,29 @@ document.addEventListener('DOMContentLoaded', () => {
     CarrouselJuegoSide();
     juegoSide();
   }
+  CarrouselJuegos();
+  buscarYMostrarJuegos();
+
+  const searchLink = document.getElementById('searchLink');
+  const busquedaDiv = document.querySelector('.busqueda');
+
+  searchLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    busquedaDiv.style.display = (busquedaDiv.style.display === 'block') ? 'none' : 'block';
+  });
+
+  // Referencia al campo de búsqueda
+  const inputBusqueda = document.getElementById('bus');
+
+  // Detectar cuando el usuario presione Enter
+  inputBusqueda.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      const valor = inputBusqueda.value.trim();
+      if (valor) {
+        buscarJuego(valor);
+      }
+    }
+  });
 });
 const SELECTED_GAME_KEY = 'selectedGameId';
 
@@ -416,6 +439,9 @@ async function buscarYMostrarJuegos(page = 1) {
     container.innerHTML = "<h1>Error al cargar los juegos</h1><p>Peldon peldon peldon.</p>";
   }
 }
+
+/*********************************** PAGINACION *********************************************/
+
 function renderizarPaginacion(currentPage, totalPages) {
   // Cogemos el contenedor de la paginacion
   const paginationContainer = document.getElementById('pagination-container');
@@ -526,4 +552,3 @@ async function buscarJuego(nombre) {
     container.innerHTML = `<h3>Error al buscar el juego</h3>`;
   }
 }
-

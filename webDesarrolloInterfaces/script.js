@@ -14,8 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     CarrouselJuegoSide();
     juegoSide();
   }
-  CarrouselJuegos();
-  buscarYMostrarJuegos();
 
   const searchLink = document.getElementById('searchLink');
   const busquedaDiv = document.querySelector('.busqueda');
@@ -412,6 +410,8 @@ async function buscarYMostrarJuegos(page = 1) {
 
     //**********************  Fin contenedor flip card  ***************************************/
 
+    //**********************  Contenido flip card  *****************************************/
+
       // Añadimos la informacion a la flip card
       flipCardFront.appendChild(gameImage);
       flipCardFront.appendChild(flipCardTitle);
@@ -439,6 +439,8 @@ async function buscarYMostrarJuegos(page = 1) {
     container.innerHTML = "<h1>Error al cargar los juegos</h1><p>Peldon peldon peldon.</p>";
   }
 }
+  //********************** FIN Contenido flip card  *****************************************/
+
 
 /*********************************** PAGINACION *********************************************/
 
